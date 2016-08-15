@@ -1,0 +1,1 @@
+CREATE DATABASE IF NOT EXISTS i2c_env_sensors;
