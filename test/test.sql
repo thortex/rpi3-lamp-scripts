@@ -655,8 +655,6 @@ INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) 
 INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 7:00:00",4.6,1015.0,54,0,0);
 INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 8:00:00",6.8,1015.1,45,0,0);
 INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 9:00:00",7.9,1015.2,43,0,0);
-INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 10:00:00",,,,0,0);
-INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 11:00:00",,1015.0,,0,0);
 INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 12:00:00",11.0,1014.8,27,0,0);
 INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 13:00:00",10.4,1015.0,27,0,0);
 INSERT INTO i2c_env_sensors.basics (`date`, `temp`,`pres`,`humi`,`lumi`,`cput`) VALUES("2016/4/12 14:00:00",9.7,1014.6,26,0,0);
