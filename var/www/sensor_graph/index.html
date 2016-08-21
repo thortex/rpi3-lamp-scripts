@@ -1,0 +1,348 @@
+<!doctype html>
+<head>
+<meta charset="UTF-8" />
+<title>Raspberry Pi Sensor Graph</title>
+<!-- JavaScripts -->
+<script src="js/jquery.min.js"></script>
+<script src="jqui/jquery-ui.js"></script>
+<script type="text/javascript" src="js/jquery.jqplot.min.js"></script>
+<script type="text/javascript" src="js/plugins/jqplot.trendline.min.js"></script>
+<script type="text/javascript" src="js/plugins/jqplot.dateAxisRenderer.min.js"></script>
+<script type="text/javascript" src="js/plugins/jqplot.highlighter.min.js"></script>
+<script type="text/javascript" src="js/plugins/jqplot.cursor.js"></script>
+<script type="text/javascript" src="js/plugins/jqplot.pointLabels.min.js"></script>
+<!-- Stylesheets -->
+<link rel="stylesheet" type="text/css" href="jqui/jquery-ui.css" />
+<link rel="stylesheet" type="text/css" href="js/jquery.jqplot.min.css" />
+<link rel="stylesheet" type="text/css" href="misc.css" />
+
+<script type="text/javascript">
+$(document).ready(function(){
+    // 日時取得
+    var eDate = new Date();
+    // 終了(今日)
+    var eYy = eDate.getFullYear();
+    var eMm = eDate.getMonth() + 1;
+    if(eMm < 10) eMm = '0' + eMm;
+    var eDd = eDate.getDate();
+    if(eDd < 10) eDd = '0' + eDd;
+    $("#datepicker2").val(eYy+"-"+eMm+"-"+eDd);
+
+    // 開始 (1週間前)
+    var sDate = new Date(eDate - (7*24*60*60*1000));
+    var sYy = sDate.getFullYear();
+    var sMm = sDate.getMonth() + 1;
+    if(sMm < 10) sMm = '0' + sMm;
+    var sDd = sDate.getDate();
+    if(sDd < 10) sDd = '0' + sDd;
+    $("#datepicker1").val(sYy+"-"+sMm+"-"+sDd);
+    
+    // グラフ表示押下
+    $("#doSbmit").click(function(){
+    	fncGetData();
+    });
+  
+});
+
+// グラフ表示データ取得とグラフ表示
+function fncGetData(){
+    // [温湿度、気圧] + [照度]
+    var vTmpData = [[]]; // 温度
+    var vHumData  = [[]]; // 湿度
+    var vLuxData  = [[]]; // 照度
+    var vPrsData  = [[]]; // 気圧
+
+    // Request URI
+    var sDate = $("#datepicker1").val(); // 開始日時
+    var eDate = $("#datepicker2").val(); // 終了日時
+    var vPeriod = $("#selectmenu").val(); // 表示間隔
+    var jsonPath = "/php/json.php?period=" + vPeriod + "&start=" + sDate + "&end=" + eDate;
+    
+    // JSONデータ獲得
+    $.getJSON(jsonPath, function() {
+        //alert("実行");
+    })
+    .success(function(data) {
+        //alert("成功");
+        var nCount = 0;
+        var vMmin  = "";
+        var vMax   = "";
+        $.each(data, function(){
+            var vDateTime = this.d;
+            vTmpData[nCount] = [vDateTime, this.t];
+            vHumData[nCount]  = [vDateTime, this.h];
+            vPrsData[nCount]  = [vDateTime, this.p];
+            vLuxData[nCount]  = [vDateTime, this.l];
+            nCount++;
+        });
+        var vData = [vTmpData, vHumData, vPrsData, vLuxData];
+        var vText = sDate + " ～ " + eDate;
+        fncPlot(vData, nCount, vText, sDate, eDate, vPeriod);
+    })
+    .error(function(jqXHR, textStatus, errorThrown) {
+        alert("エラー：" + textStatus);
+        alert("テキスト：" + jqXHR.responseText);
+    })
+    .complete(function() {
+        //alert("完了");
+    });
+
+}
+
+// グラフ表示（データ, データ数, X軸タイトル, 最少X軸, 最大X軸）
+function fncPlot(vData, nCount, vText, vMmin, vMax, vPeriod){
+    // 件数表示調整
+    var vFormatString = "%H:%M";
+    var vTickInterval = "1 hour";
+
+    if (vPeriod == "hourly") {
+        vFormatString = "%H:%M";
+        vTickInterval = "2 hour";
+    } else if (vPeriod == "daily") {
+        vFormatString = "%m/%d";
+        vTickInterval = "1 day";
+    } else if (vPeriod == "weekly") {
+        vFormatString = "%m/%d";
+        vTickInterval = "1 week";
+    } else if (vPeriod == "monthly") {
+        vFormatString = "%m";
+        vTickInterval = "1 month";
+    } else if (vPeriod == "yearly") {
+        vFormatString = "%Y";
+        vTickInterval = "1 year";
+    }
+
+    // 折れ線グラフ表示設定
+    var vS1 = { yaxis:'yaxis',  label:'温度℃', color:'red',    showMarker:true, lineWidth:2, markerOptions:{style:'square'} };
+    var vS2 = { yaxis:'y2axis', label:'湿度%', color:'blue',   showMarker:true, lineWidth:2, markerOptions:{style:'diamond'} };
+    var vS3 = { yaxis:'y3axis', label:'気圧hPa',  color:'green',  showMarker:true, lineWidth:2, markerOptions:{style:'circle'} };
+    var vS4 = { yaxis:'y4axis', label:'照度lux', color:'orange', showMarker:true, lineWidth:2, markerOptions:{style:'plus'} };
+    var vSeries = [vS1,vS2,vS3,vS4];
+
+    // グラフ表示オプション
+    var options = {
+        // グラフタイトル
+        title: {
+            text:"Sensor Graph",
+            show:true,
+        },
+        // グラフ色指定など
+        series: vSeries,
+        // グラフ凡例
+        legend:{
+            show:true,
+            location:'se',
+            xoffset:0,
+            yoffset:0,
+        },
+        animate:true,
+        // 各データY軸スケール表示と色付
+        axesDefaults:{
+            useSeriesColor:true,
+            rendererOptions:{ alignTicks:true }
+        },
+        // グラフ内でカーソルを表示
+        cursor:{
+            show:true,
+            showTooltip:true,
+            tooltipLocation:'sw',
+            zoom:true,
+        },
+        // X軸、Y軸の表示詳細設定
+        axes:{
+            xaxis:{
+                renderer:$.jqplot.DateAxisRenderer,
+                tickOptions:{
+                    formatString:vFormatString,
+                    textColor:'black',
+                    angle:15,
+                },
+                tickInterval: vTickInterval,
+                label:'時刻（'+vText+'）',
+                pad:0,
+            },
+            yaxis:{
+                tickOptins:{ textColor:'black' },
+                label:'値',
+            }
+        },
+        // グラフの値を表示
+        highlighter:{
+            show:true,
+            showLable:true,
+            tooltipAxes:'y',
+        }
+    };
+
+    // グラフの表示
+    var plot1 = $.jqplot('chart1', vData,  options);
+    plot1.destroy();
+    plot1 = $.jqplot('chart1', vData,  options);
+
+    // 表示領域がリサイズ
+    $("#resizable1").resizable({delay:20});
+    $('#resizable1').bind('resize', function(event, ui) {
+        plot1.replot( { resetAxes: true } );
+    });
+
+    // Zoom Reset
+    $(".button-reset").click(function() {
+       plot1.resetZoom();
+    });
+}
+
+</script>
+
+
+</head>
+<body>
+<h1>Raspberry Pi Sensor Graph</h1>
+<form style="margin-top: 1em;">
+
+<select style="display: none;" id="selectmenu" >
+  <option value="hourly">時間毎</option>
+  <option value="daily">日毎</option>
+  <option value="weekly" selected="selected">週毎</option>
+  <option value="monthly">月毎</option>
+  <option value="yearly">年毎</option>
+</select>
+
+日付：<input type="text" id="datepicker1" />〜<input type="text" id="datepicker2" />
+
+<input type="button" id="doSbmit" class="ui-button ui-corner-all ui-widget" value="Plot / 表示" />
+</form>
+<button class="button-reset ui-button ui-corner-all ui-widget" >拡大解除</button>
+
+<script>
+
+$( "#accordion" ).accordion();
+
+
+
+var availableTags = [
+"ActionScript",
+"AppleScript",
+"Asp",
+"BASIC",
+"C",
+"C++",
+"Clojure",
+"COBOL",
+"ColdFusion",
+"Erlang",
+"Fortran",
+"Groovy",
+"Haskell",
+"Java",
+"JavaScript",
+"Lisp",
+"Perl",
+"PHP",
+"Python",
+"Ruby",
+"Scala",
+"Scheme"
+];
+$( "#autocomplete" ).autocomplete({
+source: availableTags
+});
+
+
+
+$( "#button" ).button();
+$( "#button-icon" ).button({
+icon: "ui-icon-gear",
+showLabel: false
+});
+
+
+
+$( "#radioset" ).buttonset();
+
+
+
+$( "#controlgroup" ).controlgroup();
+
+
+
+$( "#tabs" ).tabs();
+
+
+
+$( "#dialog" ).dialog({
+autoOpen: false,
+width: 400,
+buttons: [
+{
+text: "Ok",
+click: function() {
+$( this ).dialog( "close" );
+}
+},
+{
+text: "Cancel",
+click: function() {
+$( this ).dialog( "close" );
+}
+}
+]
+});
+
+// Link to open the dialog
+$( "#dialog-link" ).click(function( event ) {
+$( "#dialog" ).dialog( "open" );
+event.preventDefault();
+});
+
+$( "#datepicker1" ).datepicker({
+dateFormat: 'yy-mm-dd',
+yearSuffix: '年',
+showMonthAfterYear: true,
+monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+dayNames: ['日', '月', '火', '水', '木', '金', '土'],
+dayNamesMin: ['日', '月', '火', '水', '木', '金', '土'],
+showOn: "both",
+});
+
+$( "#datepicker2" ).datepicker({
+dateFormat: 'yy-mm-dd',
+yearSuffix: '年',
+showMonthAfterYear: true,
+monthNames: ['1月', '2月', '3月', '4月', '5月', '6月', '7月', '8月', '9月', '10月', '11月', '12月'],
+dayNames: ['日', '月', '火', '水', '木', '金', '土'],
+dayNamesMin: ['日', '月', '火', '水', '木', '金', '土'],
+showOn: "both",
+});
+
+$( "#slider" ).slider({
+range: true,
+values: [ 17, 67 ]
+});
+
+$( "#progressbar" ).progressbar({
+value: 20
+});
+
+$( "#spinner" ).spinner();
+$( "#menu" ).menu();
+$( "#tooltip" ).tooltip();
+$( "#selectmenu" ).selectmenu();
+
+// Hover states on the static widgets
+$( "#dialog-link, #icons li" ).hover(
+function() {
+$( this ).addClass( "ui-state-hover" );
+},
+function() {
+$( this ).removeClass( "ui-state-hover" );
+}
+);
+</script>
+
+<br>
+<div id="resizable1" class="ui-widget-content">
+  <div id="chart1" style="height:96%; width:96%;" />
+</div>
+
+</body>
+</html>
